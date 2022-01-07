@@ -2,6 +2,22 @@
 #include <stdlib.h>
 #include <time.h>
 
+void charBckgrndPrint(char *str, float rgb){
+  printf("\033[48;2;%d;%d;%dm", (int) rgb*255, (int) rgb*255, (int) rgb*255);
+  printf("%s\033[0m",str);
+}
+
+void imgColorPrint(int height, int width, float *img){
+  int row, col;
+  char *str="  ";
+  for(row=0; row<height; row++){
+    for(col=0; col<width; col++){
+      charBckgrndPrint(str,img[row*width + col]);
+    }
+    printf("\n");
+  }
+}
+
 void Matrix2DInitRand(float *M, int n, int p)
 {
     srand(time(0));
@@ -76,11 +92,12 @@ __global__ void cudaConv2D(float* M, float* kernel, float* Mout, int M_ligne, in
 int main(int argc, char *argv[]){
 
   // Layer 1
-
   // Initialisation de la matrice d'entrée
   float *raw_data;
   raw_data = (float*)malloc(sizeof(float) * 32 * 32);
   Matrix2DInitRand(raw_data, 32, 32);
+
+  imgColorPrint(32, 32, raw_data);
 
   // Initialisation de la matrice de sortie de la première conv
   float *C1_data;
@@ -98,7 +115,22 @@ int main(int argc, char *argv[]){
   Matrix3DInitRand(C1_kernel, 6, 14, 14);
 
   // Layer 2
+  // Premiere convolution
+  float *d_raw_data, *d_C1_data, *d_C1_kernel, *d_S1_data;
 
+  cudaMalloc((void**)&d_raw_data, sizeof(float) * 32 * 32 * 1);
+  cudaMemcpy(d_raw_data, raw_data, sizeof(float) * 32 * 32 * 1, cudaMemcpyHostToDevice);
 
+  cudaMalloc((void**)&d_C1_kernel, sizeof(float) * 5 * 5 * 6);
+  cudaMemcpy(d_C1_kernel, C1_kernel, sizeof(float) * 5 * 5 * 6, cudaMemcpyHostToDevice);
 
+  cudaMalloc((void**)&d_C1_data, sizeof(float) * 28 * 28 * 6);
+  cudaMemcpy(d_C1_data, C1_data, sizeof(float) * 28 * 28 * 6, cudaMemcpyHostToDevice);
+
+  cudaConv2D<<<32,32>>>(d_raw_data, d_C1_kernel, d_C1_data, 32, 32, 5, 6, 28, 28);
+  cudaDeviceSynchronize();
+
+  // Copie du resultat sur GPU
+  cudaMemcpy(C1_data, d_C1_data, sizeof(float) * 28 * 28 * 6, cudaMemcpyDeviceToHost);
+  //imgColorPrint(28, 28, C1_data);
 }
