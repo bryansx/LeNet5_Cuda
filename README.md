@@ -12,3 +12,6 @@ TP Hardware for Signal Processing
 
 3.1 On obtient une accélération bien plus importante pour les multiplications de matrices: 9512 ms pour le CPU contre 0.025 pour le GPU, soit une accélération de 38000 environ.
 
+## Partie 2
+1- Convolution 2D avec 6 noyaux de conv de taille 5x5. La taille résultantes est donc de 6x28x28.
+

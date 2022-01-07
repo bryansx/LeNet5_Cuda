@@ -47,9 +47,35 @@ void Matrix2DPrint(float *M, int n, int p)
     }
 }
 
+__global__ void cudaConv2D(float* M, float* kernel, float* Mout, int M_ligne, int M_colonne, int kernel_size, int nb_kernel, int Mout_ligne, int Mout_colonne){
+    
+    //Convolution d'une matrice par un kernel
+    int lig = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    float s = 0.0;
+
+    if (lig < Mout_ligne && col < Mout_colonne)
+    {
+        int tot = M_ligne * M_colonne;
+
+        for (int kernel_lig = 0; kernel_lig < kernel_size; kernel_lig++) {
+            for (int kernel_col = 0; kernel_col < kernel_size; kernel_col++) {
+                for (int n_k = 0; n_k < nb_kernel; n_k++)
+                {
+                    s += M[(lig + kernel_lig) * M_colonne + col + kernel_col + n_k * tot] * kernel[kernel_lig * kernel_size + kernel_col + n_k * nb_kernel];
+            
+                }
+            }
+        }
+        Mout[lig * Mout_colonne + col] = s;
+    }
+}
 
 
 int main(int argc, char *argv[]){
+
+  // Layer 1
 
   // Initialisation de la matrice d'entrée
   float *raw_data;
@@ -70,5 +96,9 @@ int main(int argc, char *argv[]){
   float *C1_kernel;
   C1_kernel = (float*)malloc(sizeof(float) * 6 * 5 * 5);
   Matrix3DInitRand(C1_kernel, 6, 14, 14);
+
+  // Layer 2
+
+
 
 }
