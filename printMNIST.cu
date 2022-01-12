@@ -77,7 +77,7 @@ int main() {
   }
 
   // print image
-  imgColorPrint(HEIGHT, WIDTH, img);
+  //imgColorPrint(HEIGHT, WIDTH, img);
   
   exit(EXIT_SUCCESS);
 }
