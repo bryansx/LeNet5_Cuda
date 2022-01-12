@@ -13,14 +13,15 @@ TP Hardware for Signal Processing
 1.3.1 On obtient une accélération bien plus importante pour les multiplications de matrices: 9512 ms pour le CPU contre 0.025 pour le GPU, soit une accélération de 38000 environ.
 
 ## Partie 2
-2.1- Convolution 2D avec 6 noyaux de conv de taille 5x5. La taille résultantes est donc de 6x28x28.
 
-2.1.1- Nous allons dans un premier temps écrire et tester la fonction de convolution afin de s'assurer quelle se comporte comme prévu. Pour se faire nous utiliser une image de la database MNIST. Puis nous allons faire une convolution avec le filtre de Sobel afin de vérifier que nous avons une bonne détection des contours. (run ./test_conv2d_MNIST et ./test_conv2d_squarre).
+2.1- Nous allons dans un premier temps écrire et tester la fonction de convolution afin de s'assurer quelle se comporte comme prévu. Pour se faire nous utiliser une image de la database MNIST. Puis nous allons faire une convolution avec le filtre de Sobel afin de vérifier que nous avons une bonne détection des contours. (run ./test_conv2d_MNIST et ./test_conv2d_squarre).
 On peut bien voir sur les resultats de la conv du carré que les lignes verticales en disparues et les contours horizontaux ont été détectés.
 
 => La fonction conv2d semble fonctionner comme il faut.
 
-2.2 Travail sur le fichier "Partie2/CNN.cu": 
+2.2- Travail sur le fichier "Partie2/CNN.cu" Layer 2: Convolution 2D avec 6 noyaux de conv de taille 5x5. La taille résultantes est donc de 6x28x28.
+
+2.3 Layer 3: Sous-échantiollonnage par moyennage 2x2 => donne une matrice en sortie de taille 6x14x14.
 
 
 
