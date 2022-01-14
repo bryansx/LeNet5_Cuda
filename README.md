@@ -25,12 +25,19 @@ On peut bien voir sur les resultats de la conv du carré que les lignes vertical
 
 2.4 Fonction d'activation tanh. L'activation se fait juste apres la convolution.
 
-## Partie 3: Un peu de Python
+## Partie 2: Un peu de Python 
+
 Dans cette partie nous allons créer un réseau LeNet5 sur tensorflow puis l'entrainer sur le dataset MNIST. Une fois le modèle entraîné nous allons exporter les poids obtenus sur notre code Cuda pour pouvoir réaliser des prédictions avec GPU.
 
 3.1 Il nous manque la deuxiéme convolution (+ activation), l'averagePooling, le Flatten et le réseau Fully Connected de fin.
 Les couches Flatten et Dense sont "facilements" parallélisables.
+Il manque aussi la fonction d'activation softmax.
 
+3.1.1 Flatten: Puisque nous avons travaillé depuis le début avec des vecteurs, nous n'avons pas besoin de fonction Flatten :)))
+
+3.1.2 Dense: Les couches denses consistent tout simplement a faire des muliplication matricielles A*v, avec A la matrice des poids et v le vecteur d'entrée.
+
+3.2 Une fois le réseau entier créé il faut importer les poids stockés dans le fichier "my.h5".
 
 
 

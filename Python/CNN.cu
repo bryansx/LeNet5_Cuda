@@ -52,8 +52,6 @@ void Matrix3DInitRand(float *M, int fm, int n, int p)
   }
 }
 
-
-
 void Matrix2DPrint(float *M, int n, int p)
 {
     for(int i=0; i<n; i++) {
@@ -62,6 +60,18 @@ void Matrix2DPrint(float *M, int n, int p)
       }
       printf ( "\n");
     }
+}
+
+
+void activation_softmax(float *vin, int n, float *vout)
+{
+  float sum = 0;
+  for(int i=0; i<n; i++) {
+    sum += vin[i];
+  }
+  for(int i=0; i<n; i++) {
+    vout[i] = vin[i]/sum;
+  }
 }
 
 __global__ void cudaConv2D(float* M, float* kernel, float* Mout, int M_ligne, int M_colonne, int kernel_size, int nb_kernel, int Mout_ligne, int Mout_colonne){
@@ -131,7 +141,13 @@ __global__ void activation_tanh(float* M, int M_ligne, int M_colonne, int M_prof
 
 }
 
-
+__global__ void Dense(float *A, float *v, float *vout, int col) {
+    int lig = blockIdx.x;
+    // Handling arbitrary vector size
+    for(int k=0;k<col;k++) {
+        vout[lig] += A[lig*col + k] * v[k];
+    }
+}
 
 
 int main(int argc, char *argv[]){
@@ -159,27 +175,47 @@ int main(int argc, char *argv[]){
   C1_kernel = (float*)malloc(sizeof(float) * 6 * 5 * 5);
   Matrix3DInitRand(C1_kernel, 6, 5, 5);
 
+  float *S2_data;
+  S2_data = (float*)malloc(sizeof(float) * 16 * 5 * 5);
+  Matrix3DInitZero(S1_data, 16, 5, 5);
+
+  float *pred;
+  pred = (float*)malloc(sizeof(float) * 10);
+
   // Copie des matrices dans la mémoire GPU afin d'effectuer les calculs du réseau
   
   float *d_raw_data, *d_C1_data, *d_C1_data_activated, *d_C1_kernel, *d_S1_data;
+  float *d_C2_data, *d_C2_data_activated, *d_C2_kernel, *d_S2_data;
+  float *d_dense1_weigths, *d_dense1, *d_dense1_activated;
+  float *d_dense2_weigths, *d_dense2, *d_dense2_activated;
+  float *d_dense3_weigths, *d_dense3, *d_pred;
 
   cudaMalloc((void**)&d_raw_data, sizeof(float) * 32 * 32 * 1);
   cudaMemcpy(d_raw_data, raw_data, sizeof(float) * 32 * 32 * 1, cudaMemcpyHostToDevice);
 
   cudaMalloc((void**)&d_C1_kernel, sizeof(float) * 5 * 5 * 6);
-  cudaMemcpy(d_C1_kernel, C1_kernel, sizeof(float) * 5 * 5 * 6, cudaMemcpyHostToDevice);
-
   cudaMalloc((void**)&d_C1_data, sizeof(float) * 28 * 28 * 6);
-  cudaMemcpy(d_C1_data, C1_data, sizeof(float) * 28 * 28 * 6, cudaMemcpyHostToDevice);
-
   cudaMalloc((void**)&d_C1_data_activated, sizeof(float) * 28 * 28 * 6);
-
   cudaMalloc((void**)&d_S1_data, sizeof(float) * 14 * 14 * 6);
+  cudaMalloc((void**)&d_C2_data, sizeof(float) * 16 * 10 * 10);
+  cudaMalloc((void**)&d_C2_data_activated, sizeof(float) * 16 * 10 * 10);
+  cudaMalloc((void**)&d_C2_kernel, sizeof(float) * 16 * 5 * 5);
+  cudaMalloc((void**)&d_S2_data, sizeof(float) * 16 * 5 * 5);
+
+  cudaMalloc((void**)&d_dense1_weigths, sizeof(float) * 120 * 16 * 5 * 5);
+  cudaMalloc((void**)&d_dense1, sizeof(float) * 120);
+  cudaMalloc((void**)&d_dense1_activated, sizeof(float) * 120);
+  cudaMalloc((void**)&d_dense2_weigths, sizeof(float) * 120 * 84);
+  cudaMalloc((void**)&d_dense2, sizeof(float) * 84);
+  cudaMalloc((void**)&d_dense2_activated, sizeof(float) * 84);
+  cudaMalloc((void**)&d_dense3_weigths, sizeof(float) * 84 * 10);
+  cudaMalloc((void**)&d_dense3, sizeof(float) * 10);
+  cudaMalloc((void**)&d_pred, sizeof(float) * 10);
+
 
   // Layer 2: Première conv2D (6 kernels de taille 5x5 => matrice de taille 6x28x28)
   cudaConv2D<<<28,28>>>(d_raw_data, d_C1_kernel, d_C1_data, 32, 32, 5, 6, 28, 28);
   cudaDeviceSynchronize();
-
   // Activation tanh
   activation_tanh<<<28,28>>>(d_C1_data, 28, 28, 6, d_C1_data_activated);
   cudaDeviceSynchronize();
@@ -188,17 +224,53 @@ int main(int argc, char *argv[]){
   cudaMeanPool<<<14,14>>>(d_C1_data_activated, d_S1_data, 28, 28, 6, 2, 14, 14);
   cudaDeviceSynchronize();
 
+  // Layer 4: Deuxième conv2D (16 kernels de taille 5x5 => matrice de taille 16x10x10)
+  cudaConv2D<<<14,14>>>(d_S1_data, d_C2_kernel, d_C2_data, 14, 14, 5, 16, 10, 10);
+  cudaDeviceSynchronize();
+  // Activation tanh
+  activation_tanh<<<10,10>>>(d_C2_data, 10, 10, 16, d_C2_data_activated);
+  cudaDeviceSynchronize();
+
+  // Layer 5: Sous échantillionnage par moyennage 2x2
+  cudaMeanPool<<<5,5>>>(d_C2_data_activated, d_S2_data, 10, 10, 16, 2, 5, 5);
+  cudaDeviceSynchronize();
+
+  // Layer 6: Première couche Dense. size de 120
+  Dense<<<120,1>>>(d_dense1_weigths, d_S2_data, d_dense1, 120);
+  cudaDeviceSynchronize();
+  // Activation tanh
+  activation_tanh<<<120,1>>>(d_dense1, 120, 1, 1, d_dense1_activated);
+  cudaDeviceSynchronize();
+
+  // Layer 7: Deuxième couche Dense. size 84
+  Dense<<<84,1>>>(d_dense2_weigths, d_dense1, d_dense2, 84);
+  cudaDeviceSynchronize();
+  // Activation tanh
+  activation_tanh<<<84,1>>>(d_dense2, 84, 1, 1, d_dense2_activated);
+  cudaDeviceSynchronize();
+
+  // Layer 8: Troisième couche Dense. size 10
+  Dense<<<10,1>>>(d_dense3_weigths, d_dense2, d_dense3, 10);
+  cudaDeviceSynchronize();
+  // Activation softmax
+  activation_softmax(d_dense3, 10, pred);
+  cudaDeviceSynchronize();
+
   // Copie du resultat GPU sur CPU
-  cudaMemcpy(S1_data, d_S1_data, sizeof(float) * 14 * 14 * 6, cudaMemcpyDeviceToHost);
-  
-  // Un petit printf pour vérifier que la matrice S1 est non nulle
-  printf("S1_data: \n");
-  Matrix2DPrint(S1_data, 14, 14*6);
+  cudaMemcpy(pred, d_pred, sizeof(float) * 10, cudaMemcpyDeviceToHost);
+
+  printf("Prediction: %f \n", pred);
 
   cudaFree(d_C1_data);
+  cudaFree(d_C1_data_activated);
   cudaFree(d_S1_data);
   cudaFree(d_C1_kernel);
   cudaFree(d_raw_data);
+
+  cudaFree(d_C2_data);
+  cudaFree(d_C2_data_activated);
+  cudaFree(d_S2_data);
+  cudaFree(d_C2_kernel);
 
   free(C1_data);
   free(S1_data);
