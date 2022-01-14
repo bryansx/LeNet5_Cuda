@@ -6,11 +6,11 @@ TP Hardware for Signal Processing
 
 1.2- Comparaison de temps de calcul pour l'addition parallélisée et non parallélisée avec "addMatC" et "addMatCuda" qui prennent en argument la taille des matrices.
 
-1.2.1- Pour des matrices de taille 10000*1000 on obtient une accélération de (45604/22), donc d'environ 2000. Ce qui reste dans l'ordre de grandeur de l'accélération th. 
+1.2.1- Pour des matrices de taille 1000*1000 on obtient une accélération de (10.6/0.1), donc d'environ 100. Ce qui est inférieur à l' accélération théorique de 1000. Cela est surement  a temps de copie des variables. 
 
 1.3- Comparaison de temps de calcul pour la multiplication parallélisée et non parallélisée avec "mulMatC" et "mulMatCuda" qui prennent en argument la taille des matrices.
 
-1.3.1 On obtient une accélération bien plus importante pour les multiplications de matrices: 9512 ms pour le CPU contre 0.025 pour le GPU, soit une accélération de 38000 environ.
+1.3.1 On obtient une accélération bien plus importante pour les multiplications de matrices: 8100 ms pour le CPU contre 0.8 pour le GPU, soit une accélération de 10000 environ.
 
 ## Partie 2
 
@@ -22,6 +22,15 @@ On peut bien voir sur les resultats de la conv du carré que les lignes vertical
 2.2- Travail sur le fichier "Partie2/CNN.cu" Layer 2: Convolution 2D avec 6 noyaux de conv de taille 5x5. La taille résultantes est donc de 6x28x28.
 
 2.3 Layer 3: Sous-échantiollonnage par moyennage 2x2 => donne une matrice en sortie de taille 6x14x14.
+
+2.4 Fonction d'activation tanh. L'activation se fait juste apres la convolution.
+
+## Partie 3: Un peu de Python
+Dans cette partie nous allons créer un réseau LeNet5 sur tensorflow puis l'entrainer sur le dataset MNIST. Une fois le modèle entraîné nous allons exporter les poids obtenus sur notre code Cuda pour pouvoir réaliser des prédictions avec GPU.
+
+3.1 Il nous manque la deuxiéme convolution (+ activation), l'averagePooling, le Flatten et le réseau Fully Connected de fin.
+Les couches Flatten et Dense sont "facilements" parallélisables.
+
 
 
 
