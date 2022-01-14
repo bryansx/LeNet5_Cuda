@@ -25,7 +25,7 @@ On peut bien voir sur les resultats de la conv du carré que les lignes vertical
 
 2.4 Fonction d'activation tanh. L'activation se fait juste apres la convolution.
 
-## Partie 2: Un peu de Python 
+## Partie 3: Un peu de Python 
 
 Dans cette partie nous allons créer un réseau LeNet5 sur tensorflow puis l'entrainer sur le dataset MNIST. Une fois le modèle entraîné nous allons exporter les poids obtenus sur notre code Cuda pour pouvoir réaliser des prédictions avec GPU.
 
